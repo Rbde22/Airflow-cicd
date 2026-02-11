@@ -74,7 +74,7 @@ jobs:
       - name: Upload DAG to Composer DEV
         run: |
           gsutil cp airflow_job/airflow_job.py \
-          gs://us-central1-airflow-dev-7ac3bc73-bucket/dags/
+          gs://us-central1-airflow-dev-7ac3bc73-bucket/dags/airflow_job.py
 
 
   upload-to-prod:
@@ -128,4 +128,4 @@ jobs:
       - name: Upload DAG to Composer PROD
         run: |
           gsutil cp airflow_job/airflow_job.py \
-          gs://us-central1-airflow-prod-e65a1775-bucket/dags/
+          gs://us-central1-airflow-prod-e65a1775-bucket/dags/airflow_job.py
