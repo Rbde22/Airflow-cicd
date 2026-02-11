@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: project-01e6277e-ecd7-4798-ad3
   REGION: us-central1
 
 jobs:
