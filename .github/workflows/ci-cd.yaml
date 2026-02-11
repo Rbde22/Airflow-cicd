@@ -26,51 +26,55 @@ jobs:
         uses: actions/checkout@v3
 
 
+      # Authenticate to correct GCP project
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/890977586545/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: 890977586545-compute@developer.gserviceaccount.com
+          project_id: project-01e6277e-ecd7-4798-ad3
 
 
+      # Setup gcloud with correct project
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: project-01e6277e-ecd7-4798-ad3
 
 
-      # CRITICAL FIX: Force correct project
+      # Explicitly override project (critical)
       - name: Set correct project
-        run: |
-          gcloud config set project $PROJECT_ID
-          echo "Using project:"
-          gcloud config list
+        run: gcloud config set project project-01e6277e-ecd7-4798-ad3
 
 
+      # Upload Variables
       - name: Upload Variables JSON to GCS
         run: |
           gsutil cp variables/dev/variables.json \
           gs://us-central1-airflow-dev-7ac3bc73-bucket/data/dev/variables.json
 
 
+      # Import Variables into Composer
       - name: Import Variables into Airflow DEV
         run: |
           gcloud composer environments run airflow-dev \
-            --project $PROJECT_ID \
-            --location $REGION \
+            --project project-01e6277e-ecd7-4798-ad3 \
+            --location us-central1 \
             variables import -- /home/airflow/gcs/data/dev/variables.json
 
 
+      # Upload Spark Job
       - name: Upload Spark Job to GCS
         run: |
           gsutil cp spark_job/spark_transformation_job.py \
           gs://airflow-projects-bucket9feb2026/flight-booking-analysis/spark-job/
 
 
-      # FIXED DAG upload (correct method)
+      # Upload DAG directly to Composer bucket (most reliable)
       - name: Upload DAG to Composer DEV
         run: |
           gsutil cp airflow_job/airflow_job.py \
           gs://us-central1-airflow-dev-7ac3bc73-bucket/dags/
-
 
 
   upload-to-prod:
@@ -88,15 +92,17 @@ jobs:
         with:
           workload_identity_provider: projects/890977586545/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: 890977586545-compute@developer.gserviceaccount.com
+          project_id: project-01e6277e-ecd7-4798-ad3
 
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: project-01e6277e-ecd7-4798-ad3
 
 
       - name: Set correct project
-        run: |
-          gcloud config set project $PROJECT_ID
+        run: gcloud config set project project-01e6277e-ecd7-4798-ad3
 
 
       - name: Upload Variables JSON to GCS
@@ -108,8 +114,8 @@ jobs:
       - name: Import Variables into Airflow PROD
         run: |
           gcloud composer environments run airflow-prod \
-            --project $PROJECT_ID \
-            --location $REGION \
+            --project project-01e6277e-ecd7-4798-ad3 \
+            --location us-central1 \
             variables import -- /home/airflow/gcs/data/prod/variables.json
 
 
