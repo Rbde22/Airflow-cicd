@@ -16,31 +16,37 @@ env:
   REGION: us-central1
 
 jobs:
+
   upload-to-dev:
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
 
     steps:
+
       # Checkout repository
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Authenticate to GCP using Workload Identity Federation
+
+      # Authenticate using Workload Identity Federation
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/890977586545/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: 890977586545-compute@developer.gserviceaccount.com
 
-      # Install and setup gcloud SDK
+
+      # Install gcloud SDK
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
 
-      # Explicitly set project (CRITICAL FIX)
+
+      # Explicitly set project (CRITICAL)
       - name: Set GCP Project
-        run: gcloud config set project $PROJECT_ID
+        run: |
+          gcloud config set project $PROJECT_ID
+          gcloud config list
+
 
       # Upload variables.json to Composer bucket
       - name: Upload Variables JSON to GCS
@@ -48,26 +54,33 @@ jobs:
           gsutil cp variables/dev/variables.json \
           gs://us-central1-airflow-dev-7ac3bc73-bucket/data/dev/variables.json
 
-      # Import Variables into Airflow DEV
-      - name: Import Variables into Airflow-DEV
+
+      # Import variables into Composer DEV
+      - name: Import Variables into Airflow DEV
         run: |
           gcloud composer environments run airflow-dev \
+            --project $PROJECT_ID \
             --location $REGION \
-            variables import -- /home/airflow/gcs/data/dev/variables.json
+            variables import -- \
+            /home/airflow/gcs/data/dev/variables.json
 
-      # Upload Spark job to GCS
+
+      # Upload Spark Job
       - name: Upload Spark Job to GCS
         run: |
           gsutil cp spark_job/spark_transformation_job.py \
           gs://airflow-projects-bucket9feb2026/flight-booking-analysis/spark-job/
 
+
       # Upload DAG to Composer DEV
-      - name: Upload Airflow DAG to DEV Environment
+      - name: Upload DAG to Composer DEV
         run: |
           gcloud composer environments storage dags import \
+            --project $PROJECT_ID \
             --environment airflow-dev \
             --location $REGION \
             --source airflow_job/airflow_job.py
+
 
 
   upload-to-prod:
@@ -75,50 +88,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Authenticate to GCP
+
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/890977586545/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: 890977586545-compute@developer.gserviceaccount.com
 
-      # Install and setup gcloud SDK
+
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
 
-      # Explicitly set project (CRITICAL FIX)
+
       - name: Set GCP Project
-        run: gcloud config set project $PROJECT_ID
+        run: |
+          gcloud config set project $PROJECT_ID
+          gcloud config list
 
-      # Upload variables.json to Composer bucket
+
       - name: Upload Variables JSON to GCS
         run: |
           gsutil cp variables/prod/variables.json \
           gs://us-central1-airflow-prod-e65a1775-bucket/data/prod/variables.json
 
-      # Import Variables into Airflow PROD
-      - name: Import Variables into Airflow-PROD
+
+      - name: Import Variables into Airflow PROD
         run: |
           gcloud composer environments run airflow-prod \
+            --project $PROJECT_ID \
             --location $REGION \
-            variables import -- /home/airflow/gcs/data/prod/variables.json
+            variables import -- \
+            /home/airflow/gcs/data/prod/variables.json
 
-      # Upload Spark job to GCS
+
       - name: Upload Spark Job to GCS
         run: |
           gsutil cp spark_job/spark_transformation_job.py \
           gs://airflow-projects-bucket9feb2026/flight-booking-analysis/spark-job/
 
-      # Upload DAG to Composer PROD
-      - name: Upload Airflow DAG to PROD Environment
+
+      - name: Upload DAG to Composer PROD
         run: |
           gcloud composer environments storage dags import \
+            --project $PROJECT_ID \
             --environment airflow-prod \
             --location $REGION \
             --source airflow_job/airflow_job.py
